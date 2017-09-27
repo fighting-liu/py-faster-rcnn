@@ -12,6 +12,8 @@ import numpy.random as npr
 import cv2
 from fast_rcnn.config import cfg
 from utils.blob import prep_im_for_blob, im_list_to_blob
+import requests
+
 
 def get_minibatch(roidb, num_classes):
     """Given a roidb, construct a minibatch sampled from it."""
@@ -130,6 +132,17 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image, num_classes):
 
     return labels, overlaps, rois, bbox_targets, bbox_inside_weights
 
+
+cv_session = requests.Session()
+cv_session.trust_env = False
+def cv_load_image(in_):
+    if in_[:4] == 'http':
+        img_nparr = np.fromstring(cv_session.get(in_).content, np.uint8)
+        img = cv2.imdecode(img_nparr, cv2.IMREAD_COLOR)
+    else:
+        img = cv2.imread(in_)
+    return img
+
 def _get_image_blob(roidb, scale_inds):
     """Builds an input blob from the images in the roidb at the specified
     scales.
@@ -138,7 +151,8 @@ def _get_image_blob(roidb, scale_inds):
     processed_ims = []
     im_scales = []
     for i in xrange(num_images):
-        im = cv2.imread(roidb[i]['image'])
+        # im = cv2.imread(roidb[i]['image'])
+        im = cv_load_image(roidb[i]['image'])
         if roidb[i]['flipped']:
             im = im[:, ::-1, :]
         target_size = cfg.TRAIN.SCALES[scale_inds[i]]

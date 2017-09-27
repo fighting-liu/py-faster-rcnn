@@ -10,6 +10,7 @@
 from fast_rcnn.config import cfg, get_output_dir
 from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv
 import argparse
+import sys
 from utils.timer import Timer
 import numpy as np
 import cv2

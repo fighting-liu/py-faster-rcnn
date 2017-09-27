@@ -30,8 +30,10 @@ import matplotlib.pyplot as plt
 
 # CLASSES = ('__background__', 'handbags', 'shoes', 'up_body', 'down_body', \
 #          'all_body', 'boots', 'bra', 'underwear', 'skirt', 'dress')
-CLASSES = ('__background__', 'handbags', 'shoes', 'up_body', 'down_body', \
-         'all_body', 'boots', 'bra', 'underwear', 'skirt', 'dress', 'makeup')
+# CLASSES = ('__background__', 'handbags', 'shoes', 'up_body', 'down_body', \
+#          'all_body', 'boots', 'bra', 'underwear', 'skirt', 'dress', 'makeup')
+# CLASSES = ('__background__', 'handbags', 'shoes', 'up_body', 'down_body', 'all_body', 'boots', 'bra', 'underwear', 'skirt', 'dress', 'lipstick', 'mascara', 'mascara_with_bbox','single_blusher', 'multi_blusher', 'pen', 'nail_polish', 'perfume', 'tin_shape', 'bottle_shape', 'pipe_shape', 'mouse_shape', 'square_shape', 'bucket_shape', 'tools')
+CLASSES = ('__background__', 'upbody', 'downbody', 'fullbody')
 
 # METHOD #1: OpenCV, NumPy, and urllib
 def url_to_image(url):
@@ -52,6 +54,7 @@ def bag_demo(net, image_name):
     """Detect object classes in an image using pre-computed object proposals."""
     # im = cv2.imread(image_name)
     im = url_to_image(image_name)
+    print im.shape
     # Detect all object classes and regress object bounds
     timer = Timer()
     timer.tic()
@@ -66,7 +69,7 @@ def bag_demo(net, image_name):
     colors = plt.cm.hsv(np.linspace(0, 1, len(CLASSES))).tolist()
     plt.imshow(im)
     currentAxis = plt.gca()    
-    CONF_THRESH = 0.5
+    CONF_THRESH = 0.7
     NMS_THRESH = 0.3
     for cls_ind, cls in enumerate(CLASSES[1:]):
         cls_ind += 1 # because we skipped background
@@ -87,6 +90,7 @@ def bag_demo(net, image_name):
             label_name = cls
             display_txt = '%s: %.2f'%(label_name, score)
             coords = (xmin, ymin), xmax-xmin+1, ymax-ymin+1
+            print xmin*1.0/im.shape[1],xmax*1.0/im.shape[1],ymin*1.0/im.shape[0],ymax*1.0/im.shape[0]
             color = colors[cls_ind]
             currentAxis.add_patch(plt.Rectangle(*coords, fill=False, edgecolor=color, linewidth=2))
             currentAxis.text(xmin, ymin, display_txt, bbox={'facecolor':color, 'alpha':0.5})      
@@ -236,13 +240,23 @@ def load_images(test_path):
 if __name__ == '__main__':
     cfg.TEST.HAS_RPN = True  # Use RPN for proposals
 
-    args = parse_args()
 
-    prototxt = 'models/all_categories_0307/VGG16/faster_rcnn_end2end/test.prototxt'
+    args = parse_args()
+    # # prototxt = 'models/all_cats_25cls_before0307_and_after0311/VGG16/faster_rcnn_end2end/test.prototxt'
     # prototxt = 'models/all_categories/ResNet101/faster_rcnn_end2end/test.prototxt'
     # caffemodel = 'output/faster_rcnn_end2end/2007_trainval_all_categories/ResNet101_all_categories_frcnn_iter_100000.caffemodel'
-    caffemodel = 'output/faster_rcnn_end2end/2007_trainval_all_categories_0307/VGG16_all_categories_0307_frcnn_iter_300000.caffemodel'    
+    # # caffemodel = 'output/faster_rcnn_end2end/voc_2007_trainval_all_cats_25cls_before0307_and_after0311/VGG16_all_cats_25cls_before0307_and_after0311_voc_frcnn_iter_700000.caffemodel'    
 
+    # prototxt = 'models/all_categories_0307/VGG16/faster_rcnn_end2end/test.prototxt'
+    # caffemodel = 'output/faster_rcnn_end2end/2007_trainval_all_categories_0307/VGG16_all_categories_0307_frcnn_iter_300000.caffemodel' 
+
+    # prototxt = '/data/home/liuhuawei/detection/py-R-FCN-multiGPU/models/all_cats_11cls_train_0427_plus_2000handbags/VGG16/faster_rcnn_end2end/test.prototxt'
+    # caffemodel = '/data/home/liuhuawei/detection/py-R-FCN-multiGPU/VGG16_all_cats_11cls_train_0425_plus_2000handbags_voc_frcnn_iter_150000.caffemodel'    
+    # prototxt = '/core/data/deploy/server_image/clothing_detection/test.prototxt'
+    # caffemodel = '/core/data/deploy/server_image/clothing_detection/test.caffemodel'
+
+    prototxt = '/core/data/deploy/server_image/test_clothing.prototxt'
+    caffemodel = '/core/data/deploy/server_image/vgg16_clothing_240000.caffemodel'
     if not os.path.isfile(caffemodel):
         raise IOError(('{:s} not found.\nDid you run ./data/script/'
                        'fetch_faster_rcnn_models.sh?').format(caffemodel))
@@ -263,7 +277,8 @@ if __name__ == '__main__':
     for i in xrange(2):
         _, _= im_detect(net, im)      
 
-    im_names = ["http://img.haishentech.com/macys/0010f60c27039830360d905ad534b304-chestnut-0.jpg?x-oss-process=image/resize,m_pad,h_800,w_800,color_FFFFFF"]
+    im_names = ["http://img.haishentech.com/6pm/25ed7e5ed3b025a796658a9df436226f.jpg"]
+    im_names = ['http://img.haishentech.com/theoutnet/01f18ce3306860c14231bcccc18841fd.jpg']
     for im_name in im_names:
         print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
         print 'Demo for data/demo/{}'.format(im_name)

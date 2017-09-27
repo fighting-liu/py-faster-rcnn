@@ -11,7 +11,19 @@ import numpy as np
 from fast_rcnn.config import cfg
 from fast_rcnn.bbox_transform import bbox_transform
 from utils.cython_bbox import bbox_overlaps
-import PIL
+# import PIL
+import cv2
+import requests
+
+cv_session = requests.Session()
+cv_session.trust_env = False
+def cv_load_image(in_):
+    if in_[:4] == 'http':
+        img_nparr = np.fromstring(cv_session.get(in_).content, np.uint8)
+        img = cv2.imdecode(img_nparr, cv2.IMREAD_COLOR)
+    else:
+        img = cv2.imread(in_)
+    return img
 
 def prepare_roidb(imdb):
     """Enrich the imdb's roidb by adding some derived quantities that
@@ -20,8 +32,16 @@ def prepare_roidb(imdb):
     each ground-truth box. The class with maximum overlap is also
     recorded.
     """
-    sizes = [PIL.Image.open(imdb.image_path_at(i)).size
-             for i in xrange(imdb.num_images)]
+    # sizes = [PIL.Image.open(imdb.image_path_at(i)).size
+    #          for i in xrange(imdb.num_images)]
+    sizes = [cv_load_image(imdb.image_path_at(i)).shape
+                for i in xrange(imdb.num_images)]
+    # ######
+    # sizes = []                
+    # for i in xrange(imdb.num_images):
+    #     print imdb._image_index[i], imdb.image_path_at(i)  
+    #     sizes.append(cv_load_image(imdb.image_path_at(i)).shape)
+    # ######    
     roidb = imdb.roidb
     for i in xrange(len(imdb.image_index)):
         roidb[i]['image'] = imdb.image_path_at(i)

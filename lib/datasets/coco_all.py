@@ -133,6 +133,7 @@ class coco(imdb):
 
         images = data['images'] 
         imgid_to_abspath = dict((img_dict['id'], img_dict['file_name']) for img_dict in images)
+        # imgid_to_abspath = dict((img_dict['id'], img_dict['url']) for img_dict in images)
         return imgid_to_abspath
     #########liu    
     def image_path_from_index(self, index):
@@ -142,8 +143,8 @@ class coco(imdb):
         # Example image path for index=119993:
         #   images/train2014/COCO_train2014_000000119993.jpg
         image_path = self._image_index_to_path[index]
-        assert osp.exists(image_path), \
-                'Path does not exist: {}'.format(image_path)
+        # assert osp.exists(image_path), \
+        #         'Path does not exist: {}'.format(image_path)
         return image_path
 
     def selective_search_roidb(self):

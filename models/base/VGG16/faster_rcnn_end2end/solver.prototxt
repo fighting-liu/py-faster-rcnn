@@ -1,0 +1,14 @@
+train_net: "/data/home/liuhuawei/detection/dev-py-faster-rcnn/models/base/VGG16/faster_rcnn_end2end/train_now.prototxt"
+base_lr: 0.001
+display: 20
+lr_policy: "step"
+gamma: 0.1
+momentum: 0.9
+weight_decay: 0.0005
+stepsize: 60000
+snapshot: 0
+snapshot_prefix: "vgg16_test_data_faster_rcnn"
+average_loss: 100
+iter_size: 2
+type: "SGD"
+

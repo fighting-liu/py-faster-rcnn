@@ -65,7 +65,6 @@ class AllCats(imdb):
         ## As we generate train/test txt file when converting json to xml
         self._image_index = self._load_image_set_index()
         ########### End of my own implementation
-
         # PASCAL specific config options
         self.config = {'cleanup'     : True,
                        'use_salt'    : True,
@@ -221,9 +220,9 @@ class AllCats(imdb):
         images = data['images'] 
 
         ## combine images
-        all_image_index = [img_dict['img'].split('.')[0] for img_dict in images]  
+        # all_image_index = [img_dict['img'].split('.')[0] for img_dict in images]  
+        all_image_index = [img_dict['img'] for img_dict in images]
         distinct_image_index = set(all_image_index)
-        # image_index = [img_dict['img'].split('.')[0] for img_dict in images]
         image_set_file = os.path.join(self._data_path, 'ImageSets', 'Main',
                                       self._image_set + '.txt')
         print 'Writing txt file to %s' % image_set_file
@@ -233,7 +232,8 @@ class AllCats(imdb):
                 f.write(index+'\n')                                      
 
         ## 2. make index to abspath dict for indexing       
-        img_idx_abspath = [(img_dict['img'].split('.')[0], img_dict['file_name']) for img_dict in images]
+        # img_idx_abspath = [(img_dict['img'].split('.')[0], img_dict['file_name']) for img_dict in images]
+        img_idx_abspath = [(img_dict['img'], img_dict['file_name']) for img_dict in images]
         self._index_to_path = dict(img_idx_abspath)
 
 
@@ -243,13 +243,16 @@ class AllCats(imdb):
         combined_annts = {}
         ###
         for annot in annotations:
-            image_index = annot['source_id'].split('.')[0]
+            # image_index = annot['source_id'].split('.')[0]
+            image_index = annot['source_id']
             if image_index not in combined_annts.keys():
                 combined_annts[image_index] = []
             combined_annts[image_index].append(annot)    
 
         assert len(combined_annts.keys()) == len(distinct_image_index)   
 
+        ################2 changes
+        # distinct_image_index = list(distinct_image_index)
         for idx, img_index in enumerate(distinct_image_index):
             # if idx < 8200:
             #     continue

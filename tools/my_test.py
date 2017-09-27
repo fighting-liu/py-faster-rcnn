@@ -11,15 +11,67 @@ import yaml
 from collections import OrderedDict
 
 
+def combine_json(json_1, json_2):
+    with open(json_1, 'rb') as f:
+        data_1 = json.load(f)
+    print data_1.keys()
+    print "~~~~~~~~~~~~~~~~"
+    print len(data_1['images'])
+    print data_1['images'][0]
+    print data_1['images'][0].keys()
+
+    print "~~~~~~~~~~~~~~"
+    print len(data_1['annotations'])
+    print data_1['annotations'][0]
+    print data_1['annotations'][0].keys()
+
+    print "~~~~~~~~~~~~~~"
+    print data_1['categories']
+    print data_1['categories'][0].keys()
+
+    print "-----------------------------"
+    with open(json_2, 'rb') as f:
+        data_2 = json.load(f)
+
+    print len(data_2['images'])
+    # print type(data_2['images'])
+    print len(data_2['annotations'])
+    # print type(data_2['annotations'])
+    data = {}
+    data['categories'] = data_1['categories']
+    data['images'] = data_1['images'] + data_2['images'][:2000]
+    # data['annotations'] = data_1['annotations'] + data_2['annotations']
+    data['annotations'] = data_1['annotations']
+    handbag_img = [i['img'] for i in data_2['images'][:2000]]
+    for ann in data_2['annotations']:
+        if ann['source_id'] in handbag_img:
+            data['annotations'].append(ann)
+
+    print len(data['images'])
+    print len(data['annotations'])
+
+    img_ids = [d['id'] for d in data['images']]           
+    print 'number of images', len(set(img_ids))
+
+
+    with open('/data/home/liuhuawei/detection/input/all_cats_11cls_train_0427_plus_2000handbags.json', 'w') as f:
+        f.write(json.dumps(data))
+
+if __name__ == '__main__':
+    json_1 = '/data/home/liuhuawei/detection/input/all_cats_11cls_train_0427.json'
+    json_2 = '/data/home/liuhuawei/detection/input/7000_ann_from8650.json'
+    combine_json(json_1, json_2)    
+
+
 # old_prototxt = '/data/home/liuhuawei/clothing_recognition/model/vgg16_with_joints_test/deploy_backup.prototxt'
 ##Here, we have new layer names, which need to be initialized. We want to copy old params to new params.
-new_prototxt = '/data/home/liuhuawei/clothing_recognition/model/vgg16_with_joints_test/deploy.prototxt'
+# new_prototxt = '/data/home/liuhuawei/clothing_recognition/model/vgg16_with_joints_test/deploy.prototxt'
 
-##Old model
-caffemodel = '/data/home/liuhuawei/clothing_recognition/model/vgg16_with_joints_test/new_vgg.caffemodel'
-# old_net = caffe.Net(old_prototxt, caffemodel, caffe.TEST)
-net = caffe.Net(new_prototxt, caffemodel, caffe.TEST)
-print("blobs {}\nparams {}".format(net.blobs.keys(), net.params.keys()))
+# ##Old model
+# caffemodel = '/data/home/liuhuawei/clothing_recognition/model/vgg16_with_joints_test/new_vgg.caffemodel'
+# # old_net = caffe.Net(old_prototxt, caffemodel, caffe.TEST)
+# net = caffe.Net(new_prototxt, caffemodel, caffe.TEST)
+# print("blobs {}\nparams {}".format(net.blobs.keys(), net.params.keys()))
 # print net.blobs['pool5'].data.shape
 # print net.blobs['fc6'].data.shape
 # print net.params['fc6'][0].data.shape
