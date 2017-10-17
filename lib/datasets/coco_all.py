@@ -81,6 +81,12 @@ class coco(imdb):
         self._class_to_ind = dict(zip(self.classes, xrange(self.num_classes)))
         self._class_to_coco_cat_id = dict(zip([c['name'] for c in cats],
                                               self._COCO.getCatIds()))
+        #########################
+        self._coco_ind_to_class_ind = dict([(self._class_to_coco_cat_id[cls], self._class_to_ind[cls])
+                                            for cls in self.classes[1:]])
+        self._class_ind_to_coco_ind = dict([(self._class_to_ind[cls], self._class_to_coco_cat_id[cls])
+                                            for cls in self.classes[1:]])
+        ##########################        
         ##we use img_id as index instead of img_name as we use in pascal voc
         self._image_index = self._load_image_set_index()
         #########liu
@@ -316,9 +322,44 @@ class coco(imdb):
                      '_' + str(index).zfill(12) + '.mat')
         return osp.join(file_name[:14], file_name[:22], file_name)
 
-    def _print_detection_eval_metrics(self, coco_eval):
+    # def _print_detection_eval_metrics(self, coco_eval):
+    #     IoU_lo_thresh = 0.5
+    #     IoU_hi_thresh = 0.95
+    #     def _get_thr_ind(coco_eval, thr):
+    #         ind = np.where((coco_eval.params.iouThrs > thr - 1e-5) &
+    #                        (coco_eval.params.iouThrs < thr + 1e-5))[0][0]
+    #         iou_thr = coco_eval.params.iouThrs[ind]
+    #         assert np.isclose(iou_thr, thr)
+    #         return ind
+
+    #     ind_lo = _get_thr_ind(coco_eval, IoU_lo_thresh)
+    #     ind_hi = _get_thr_ind(coco_eval, IoU_hi_thresh)
+    #     # precision has dims (iou, recall, cls, area range, max dets)
+    #     # area range index 0: all area ranges
+    #     # max dets index 2: 100 per image
+    #     precision = \
+    #         coco_eval.eval['precision'][ind_lo:(ind_hi + 1), :, :, 0, 2]
+    #     ap_default = np.mean(precision[precision > -1])
+    #     print ('~~~~ Mean and per-category AP @ IoU=[{:.2f},{:.2f}] '
+    #            '~~~~').format(IoU_lo_thresh, IoU_hi_thresh)
+    #     print '{:.1f}'.format(100 * ap_default)
+    #     for cls_ind, cls in enumerate(self.classes):
+    #         if cls == '__background__':
+    #             continue
+    #         # minus 1 because of __background__
+    #         precision = coco_eval.eval['precision'][ind_lo:(ind_hi + 1), :, cls_ind - 1, 0, 2]
+    #         ap = np.mean(precision[precision > -1])
+    #         print '{:.1f}'.format(100 * ap)
+
+    #     print '~~~~ Summary metrics ~~~~'
+    #     coco_eval.summarize()
+    def _print_detection_metrics(self, coco_eval):
+        info_str = ''
         IoU_lo_thresh = 0.5
-        IoU_hi_thresh = 0.95
+        IoU_hi_thresh = 0.5
+        maxDets = [1,10,100,200,300]
+        maxDets_idx = 2
+
         def _get_thr_ind(coco_eval, thr):
             ind = np.where((coco_eval.params.iouThrs > thr - 1e-5) &
                            (coco_eval.params.iouThrs < thr + 1e-5))[0][0]
@@ -328,25 +369,55 @@ class coco(imdb):
 
         ind_lo = _get_thr_ind(coco_eval, IoU_lo_thresh)
         ind_hi = _get_thr_ind(coco_eval, IoU_hi_thresh)
+
         # precision has dims (iou, recall, cls, area range, max dets)
         # area range index 0: all area ranges
         # max dets index 2: 100 per image
         precision = \
-            coco_eval.eval['precision'][ind_lo:(ind_hi + 1), :, :, 0, 2]
+            coco_eval.eval['precision'][ind_lo:(ind_hi + 1), :, :, 0, maxDets_idx]
         ap_default = np.mean(precision[precision > -1])
-        print ('~~~~ Mean and per-category AP @ IoU=[{:.2f},{:.2f}] '
-               '~~~~').format(IoU_lo_thresh, IoU_hi_thresh)
-        print '{:.1f}'.format(100 * ap_default)
+        print '~~~~ Mean and per-category AP @ [IoU=%.2f,%.2f] (MAX_DET=%d)~~~~' % (IoU_lo_thresh, IoU_hi_thresh, maxDets[maxDets_idx])
+        info_str += '~~~~ Mean and per-category AP @ [IoU=%.2f,%.2f] (MAX_DET=%d)~~~~\n' % (IoU_lo_thresh, IoU_hi_thresh, maxDets[maxDets_idx])
+        print '%-15s %5.1f' % ('all', 100 * ap_default)
+        info_str += '%-15s %5.1f\n' % ('all', 100 * ap_default)
         for cls_ind, cls in enumerate(self.classes):
             if cls == '__background__':
                 continue
+            #####
+            cls_ind = self._class_ind_to_coco_ind[cls_ind]    
             # minus 1 because of __background__
-            precision = coco_eval.eval['precision'][ind_lo:(ind_hi + 1), :, cls_ind - 1, 0, 2]
+            precision = coco_eval.eval['precision'][ind_lo:(ind_hi + 1), :, cls_ind - 1, 0, maxDets_idx]
             ap = np.mean(precision[precision > -1])
-            print '{:.1f}'.format(100 * ap)
+            print '%-15s %5.1f' % (cls, 100 * ap)
+            info_str +=  '%-15s %5.1f\n' % (cls, 100 * ap)
+        #######################################################################################
+        IoU_lo_thresh = 0.75
+        IoU_hi_thresh = 0.75       
+        ind_lo = _get_thr_ind(coco_eval, IoU_lo_thresh)
+        ind_hi = _get_thr_ind(coco_eval, IoU_hi_thresh)        
+        precision = \
+            coco_eval.eval['precision'][ind_lo:(ind_hi + 1), :, :, 0, maxDets_idx]
+        ap_default = np.mean(precision[precision > -1])
+        print '~~~~ Mean and per-category AP @ [IoU=%.2f,%.2f] (MAX_DET=%d)~~~~' % (IoU_lo_thresh, IoU_hi_thresh, maxDets[maxDets_idx])
+        info_str += '~~~~ Mean and per-category AP @ [IoU=%.2f,%.2f] (MAX_DET=%d)~~~~\n' % (IoU_lo_thresh, IoU_hi_thresh, maxDets[maxDets_idx])
+        print '%-15s %5.1f' % ('all', 100 * ap_default)
+        info_str += '%-15s %5.1f\n' % ('all', 100 * ap_default)
+        for cls_ind, cls in enumerate(self.classes):
+            if cls == '__background__':
+                continue
+            #####
+            cls_ind = self._class_ind_to_coco_ind[cls_ind]    
+            # minus 1 because of __background__
+            precision = coco_eval.eval['precision'][ind_lo:(ind_hi + 1), :, cls_ind - 1, 0, maxDets_idx]
+            ap = np.mean(precision[precision > -1])
+            print '%-15s %5.1f' % (cls, 100 * ap)
+            info_str +=  '%-15s %5.1f\n' % (cls, 100 * ap)        
+        #######################################################################################            
 
         print '~~~~ Summary metrics ~~~~'
         coco_eval.summarize()
+
+        return info_str    
 
     def _do_detection_eval(self, res_file, output_dir):
         ann_type = 'bbox'
@@ -358,7 +429,7 @@ class coco(imdb):
         coco_eval.params.useSegm = (ann_type == 'segm')
         coco_eval.evaluate()
         coco_eval.accumulate()
-        self._print_detection_eval_metrics(coco_eval)
+        self._print_detection_metrics(coco_eval)
         eval_file = osp.join(output_dir, 'detection_results.pkl')
         with open(eval_file, 'wb') as fid:
             cPickle.dump(coco_eval, fid, cPickle.HIGHEST_PROTOCOL)

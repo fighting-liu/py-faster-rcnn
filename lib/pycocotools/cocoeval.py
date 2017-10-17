@@ -378,7 +378,7 @@ class COCOeval:
         Compute and display summary metrics for evaluation results.
         Note this functin can *only* be applied on the default parameter setting
         '''
-        def _summarize( ap=1, iouThr=None, areaRng='all', maxDets=100 ):
+        def _summarize( ap=1, iouThr=None, areaRng='all', maxDets=300 ):
             p = self.params
             iStr        = ' {:<18} {} @[ IoU={:<9} | area={:>6} | maxDets={:>3} ] = {}'
             titleStr    = 'Average Precision' if ap == 1 else 'Average Recall'
@@ -388,7 +388,7 @@ class COCOeval:
             maxDetsStr  = '%d'%(maxDets)
 
             aind = [i for i, aRng in enumerate(['all', 'small', 'medium', 'large']) if aRng == areaRng]
-            mind = [i for i, mDet in enumerate([1, 10, 100]) if mDet == maxDets]
+            mind = [i for i, mDet in enumerate([1, 10, 100, 200, 300]) if mDet == maxDets]
             if ap == 1:
                 # dimension of precision: [TxRxKxAxM]
                 s = self.eval['precision']
@@ -411,7 +411,7 @@ class COCOeval:
 
         if not self.eval:
             raise Exception('Please run accumulate() first')
-        self.stats = np.zeros((12,))
+        self.stats = np.zeros((14,))
         self.stats[0] = _summarize(1)
         self.stats[1] = _summarize(1,iouThr=.5)
         self.stats[2] = _summarize(1,iouThr=.75)
@@ -421,9 +421,11 @@ class COCOeval:
         self.stats[6] = _summarize(0,maxDets=1)
         self.stats[7] = _summarize(0,maxDets=10)
         self.stats[8] = _summarize(0,maxDets=100)
-        self.stats[9]  = _summarize(0,areaRng='small')
-        self.stats[10] = _summarize(0,areaRng='medium')
-        self.stats[11] = _summarize(0,areaRng='large')
+        self.stats[9] = _summarize(0,maxDets=200)
+        self.stats[10] = _summarize(0,maxDets=300)
+        self.stats[11]  = _summarize(0,areaRng='small')
+        self.stats[12] = _summarize(0,areaRng='medium')
+        self.stats[13] = _summarize(0,areaRng='large')
 
     def __str__(self):
         self.summarize()
@@ -438,7 +440,7 @@ class Params:
         # np.arange causes trouble.  the data point on arange is slightly larger than the true value
         self.iouThrs = np.linspace(.5, 0.95, np.round((0.95-.5)/.05)+1, endpoint=True)
         self.recThrs = np.linspace(.0, 1.00, np.round((1.00-.0)/.01)+1, endpoint=True)
-        self.maxDets = [1,10,100]
+        self.maxDets = [1,10,100,200,300]
         self.areaRng = [ [0**2,1e5**2], [0**2, 32**2], [32**2, 96**2], [96**2, 1e5**2] ]
         self.useSegm = 0
         self.useCats = 1
