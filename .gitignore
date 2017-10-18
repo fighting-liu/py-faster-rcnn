@@ -1,4 +1,5 @@
 *.pyc
+*.caffemodel
 .ipynb_checkpoints
 lib/build
 lib/pycocotools/_mask.c
@@ -12,3 +13,9 @@ data/*
 !data/imagenet_models/
 models/*
 !models/base
+tools/*
+!tools/create_new_data.py
+!tools/eval_recall.py
+!tools/_init_paths.py
+!tools/test_net.py
+!tools/train_net.py
