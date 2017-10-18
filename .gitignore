@@ -19,3 +19,4 @@ tools/*
 !tools/_init_paths.py
 !tools/test_net.py
 !tools/train_net.py
+lib/cfgs/detection.cfg
