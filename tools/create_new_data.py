@@ -20,10 +20,10 @@ def make_if_not_exist(path):
 # dev_root = os.getcwd()
 
 ###### general parameters 
-dataset = 'test_newclothing0802'
+dataset = 'shampoo1017'
 data_type = 'coco'  #either 'voc' or 'coco'
 NET = 'VGG16'  #ether 'VGG16' or 'ResNet101' or 'ResNet50by2' or 'ResNet77by2'
-num_classes = 10 + 1 # plus 1 for background
+num_classes = 3 + 1 # plus 1 for background
 GPU_ID = 0
 
 finetune_from_voc_frcnn_vgg16_model = False #default, we fintune from vgg16 model
@@ -31,10 +31,10 @@ finetune_from_voc_frcnn_vgg16_model = False #default, we fintune from vgg16 mode
 
 ###### solver part parameters 
 solver_param_base_lr = 0.001
-solver_param_stepsize = 580000
+solver_param_stepsize = 587 * 10
 solver_param_iter_size = 2
-##10 * num_imgaes(for base lr) + 4 * num_images(for base_lr*0.1)
-exp_ITERS = 800000
+##10 * num_imgaes(for base lr) + 6 * num_images(for base_lr*0.1)
+exp_ITERS = 587 * (10+6)
 
 ## add ft_flag to classify caffelmodel type
 ft_flag = '_ft' if finetune_from_voc_frcnn_vgg16_model else ''

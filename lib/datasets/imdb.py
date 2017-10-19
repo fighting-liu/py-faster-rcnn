@@ -96,25 +96,52 @@ class imdb(object):
         raise NotImplementedError
 
     def _get_widths(self):
+      print self.image_path_at(i)
       return [PIL.Image.open(self.image_path_at(i)).size[0]
               for i in xrange(self.num_images)]
 
+
     def append_flipped_images(self):
-        num_images = self.num_images
-        widths = self._get_widths()
-        for i in xrange(num_images):
-            boxes = self.roidb[i]['boxes'].copy()
+        ## combine append_flipped_images+prepare_roid(imdb)
+        ##     avoid reading images in rdl_roidb.prepare_roidb(imdb)
+        assert self.num_images == len(self.roidb)
+        for i in range(self.num_images):
+            roi_rec = self.roidb[i]
+            boxes = roi_rec['boxes'].copy()
             oldx1 = boxes[:, 0].copy()
             oldx2 = boxes[:, 2].copy()
-            boxes[:, 0] = widths[i] - oldx2 - 1
-            boxes[:, 2] = widths[i] - oldx1 - 1
+            boxes[:, 0] = roi_rec['width'] - oldx2 - 1
+            boxes[:, 2] = roi_rec['width'] - oldx1 - 1
             assert (boxes[:, 2] >= boxes[:, 0]).all()
-            entry = {'boxes' : boxes,
-                     'gt_overlaps' : self.roidb[i]['gt_overlaps'],
-                     'gt_classes' : self.roidb[i]['gt_classes'],
-                     'flipped' : True}
+            entry = {'image': roi_rec['image'],
+                     'height': roi_rec['height'],
+                     'width': roi_rec['width'],
+                     'boxes': boxes,
+                     'gt_classes': self.roidb[i]['gt_classes'],
+                     'gt_overlaps': self.roidb[i]['gt_overlaps'],
+                     'max_classes': self.roidb[i]['max_classes'],
+                     'max_overlaps': self.roidb[i]['max_overlaps'],
+                     'flipped': True,
+                     'seg_areas':self.roidb[i]['seg_areas']}
             self.roidb.append(entry)
-        self._image_index = self._image_index * 2
+        self._image_index = self._image_index * 2      
+        # num_images = self.num_images
+        ## coco_all re-implement _get_widths() which is reading from coco object
+        ##    so, we will not reading images for widths.
+        # widths = self._get_widths()
+        # for i in xrange(num_images):
+        #     boxes = self.roidb[i]['boxes'].copy()
+        #     oldx1 = boxes[:, 0].copy()
+        #     oldx2 = boxes[:, 2].copy()
+        #     boxes[:, 0] = widths[i] - oldx2 - 1
+        #     boxes[:, 2] = widths[i] - oldx1 - 1
+        #     assert (boxes[:, 2] >= boxes[:, 0]).all()
+        #     entry = {'boxes' : boxes,
+        #              'gt_overlaps' : self.roidb[i]['gt_overlaps'],
+        #              'gt_classes' : self.roidb[i]['gt_classes'],
+        #              'flipped' : True}
+        #     self.roidb.append(entry)
+        # self._image_index = self._image_index * 2
 
     def evaluate_recall(self, candidate_boxes=None, thresholds=None,
                         area='all', limit=None):

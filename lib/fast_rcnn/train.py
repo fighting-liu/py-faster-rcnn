@@ -16,6 +16,8 @@ import os
 
 from caffe.proto import caffe_pb2
 import google.protobuf as pb2
+## fix AttributeError: 'module' object has no attribute 'text_format'
+import google.protobuf.text_format
 
 class SolverWrapper(object):
     """A simple wrapper around Caffe's solver.
@@ -140,9 +142,9 @@ def get_training_roidb(imdb):
         print 'done'
     ## enrich the imdb's roidb by adding more useful keys. 
     ##     adding: ('image(image_path)', 'width', 'height', 'max_classes', 'max_overlaps')   
-    print 'Preparing training data...'
-    rdl_roidb.prepare_roidb(imdb)
-    print 'done'
+    # print 'Preparing training data...'
+    # rdl_roidb.prepare_roidb(imdb)
+    # print 'done'
 
     return imdb.roidb
 

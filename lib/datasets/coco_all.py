@@ -86,6 +86,7 @@ class coco(imdb):
                                             for cls in self.classes[1:]])
         self._class_ind_to_coco_ind = dict([(self._class_to_ind[cls], self._class_to_coco_cat_id[cls])
                                             for cls in self.classes[1:]])
+
         ##########################        
         ##we use img_id as index instead of img_name as we use in pascal voc
         self._image_index = self._load_image_set_index()
@@ -249,7 +250,6 @@ class coco(imdb):
         #         roidb = cPickle.load(fid)
         #     print '{} gt roidb loaded from {}'.format(self.name, cache_file)
         #     return roidb
-
         gt_roidb = [self._load_coco_annotation(index)
                     for index in self._image_index]
         ### we will not write to local file for convenience            
@@ -268,6 +268,7 @@ class coco(imdb):
         im_ann = self._COCO.loadImgs(index)[0]
         width = im_ann['width']
         height = im_ann['height']
+        img_name = im_ann['file_name']
 
         annIds = self._COCO.getAnnIds(imgIds=index, iscrowd=None)
         objs = self._COCO.loadAnns(annIds)
@@ -289,14 +290,8 @@ class coco(imdb):
         overlaps = np.zeros((num_objs, self.num_classes), dtype=np.float32)
         seg_areas = np.zeros((num_objs), dtype=np.float32)
 
-        # Lookup table to map from COCO category ids to our internal class
-        # indices
-        coco_cat_id_to_class_ind = dict([(self._class_to_coco_cat_id[cls],
-                                          self._class_to_ind[cls])
-                                         for cls in self._classes[1:]])
-
         for ix, obj in enumerate(objs):
-            cls = coco_cat_id_to_class_ind[obj['category_id']]
+            cls = self._coco_ind_to_class_ind[obj['category_id']]
             boxes[ix, :] = obj['clean_bbox']
             gt_classes[ix] = cls
             seg_areas[ix] = obj['area']
@@ -307,13 +302,31 @@ class coco(imdb):
             else:
                 overlaps[ix, cls] = 1.0
 
+        # check bbox boundary validation
         ds_utils.validate_boxes(boxes, width=width, height=height)
-        overlaps = scipy.sparse.csr_matrix(overlaps)
-        return {'boxes' : boxes,
+        
+        # max overlap with gt over classes (columns)
+        max_overlaps = overlaps.argmax(axis=1)
+        # gt class that had the max overlap
+        max_classes = overlaps.argmax(axis=1)
+        # sanity checks
+        # max overlap of 0 => class should be zero (background)
+        zero_inds = np.where(max_overlaps == 0)[0]
+        assert all(max_classes[zero_inds] == 0)
+        # max overlap > 0 => class should not be zero (must be a fg class)        
+        nonzero_inds = np.where(max_overlaps > 0)[0]
+        assert all(max_classes[nonzero_inds] != 0)  
+
+        return {'image': img_name,
+                'height': height,
+                'width': width,        
+                'boxes' : boxes,
                 'gt_classes': gt_classes,
                 'gt_overlaps' : overlaps,
+                'max_classes': max_classes,
+                'max_overlaps': max_overlaps,                
                 'flipped' : False,
-                'seg_areas' : seg_areas}
+                'seg_areas' : seg_areas}        
 
     def _get_box_file(self, index):
         # first 14 chars / first 22 chars / all chars + .mat
