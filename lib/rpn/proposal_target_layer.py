@@ -63,6 +63,7 @@ class ProposalTargetLayer(caffe.Layer):
             print "ProposalTargetLayer!"
             # number of images
             self._count = 0
+            self._all_fg_num = 0
             self._fg_num = 0
             self._bg_num = 0
 
@@ -108,7 +109,7 @@ class ProposalTargetLayer(caffe.Layer):
 
         # Sample rois with classification labels and bounding box regression
         # targets
-        labels, rois, bbox_targets, bbox_inside_weights = self._sample_rois(
+        all_num_fg, labels, rois, bbox_targets, bbox_inside_weights = self._sample_rois(
             all_rois, gt_boxes, fg_rois_per_image,
             rois_per_image, self._num_classes)
         
@@ -129,12 +130,15 @@ class ProposalTargetLayer(caffe.Layer):
             scaled_rois[:, 4] = im_info[0] - 1
         # print 'num fg: {}'.format((labels > 0).sum())
         # print 'num bg: {}'.format((labels == 0).sum())
-        if DEBUG and self._iter % 400 == 0:            
+        if DEBUG and self._iter % 400 == 0: 
+            print 'all num fg(before sampling): {}'.format(all_num_fg)           
             print 'num fg: {}'.format((labels > 0).sum())
             print 'num bg: {}'.format((labels == 0).sum())
             self._count += 1
             self._fg_num += (labels > 0).sum()
             self._bg_num += (labels == 0).sum()
+            self._all_fg_num += all_num_fg
+            print 'all num fg(before sampling) avg: {}'.format(self._all_fg_num / self._count)
             print 'num fg avg: {}'.format(self._fg_num / self._count)
             print 'num bg avg: {}'.format(self._bg_num / self._count)
             print 'ratio: {:.3f}'.format(float(self._fg_num) / float(self._bg_num))
@@ -251,6 +255,7 @@ class ProposalTargetLayer(caffe.Layer):
 
         # Select foreground RoIs as those with >= FG_THRESH overlap
         fg_inds = np.where(max_overlaps >= cfg.TRAIN.FG_THRESH)[0].astype(int)
+        all_num_fg = fg_inds.size
         #print "~~~~~~~~~~~~ number of fore grounds: %d"  % fg_inds.size
 
         # Guard against the case when an image has fewer than fg_rois_per_image
@@ -285,7 +290,7 @@ class ProposalTargetLayer(caffe.Layer):
         bbox_targets, bbox_inside_weights = \
             _get_bbox_regression_labels(bbox_target_data, num_classes)
 
-        return labels, rois, bbox_targets, bbox_inside_weights        
+        return all_num_fg, labels, rois, bbox_targets, bbox_inside_weights        
 
 ###### fix: change rois with respect to different scale
 def _change_roi_size(filtered_rois, scale_size):

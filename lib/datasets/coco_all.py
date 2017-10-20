@@ -50,8 +50,8 @@ class coco(imdb):
         imdb.__init__(self, 'coco_' + year + '_' + image_set)
         # COCO specific config options
         self.config = {'top_k' : 2000,
-                       'use_salt' : True,
-                       'cleanup' : True,
+                       'use_salt' : False,
+                       'cleanup' : False,
                        'crowd_thresh' : 0.7,
                        'min_size' : 2}
         # name, paths

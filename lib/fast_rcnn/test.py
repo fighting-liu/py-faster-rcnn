@@ -19,6 +19,7 @@ from fast_rcnn.nms_wrapper import nms
 import cPickle
 from utils.blob import im_list_to_blob
 import os
+import requests
 
 def _get_image_blob(im):
     """Converts an image into a network input.
@@ -123,7 +124,7 @@ def im_detect(net, im, boxes=None):
     # blobs: dict of {data, rois}, we only have data here, which is processed 
     #        input to the network, bgr order and meet n*c*h*w order, 
     #        h, w has meet input standard.
-    # im_scales: To which extent scale the input the image, the output bounding
+    # im_scales: To which extent scale the input image, the output bounding
     #        box should be sclaled back. im_scale = 600 / min or 1000 / max
     blobs, im_scales = _get_blobs(im, boxes)
 
@@ -240,6 +241,16 @@ def apply_nms(all_boxes, thresh):
             nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
     return nms_boxes
 
+cv_session = requests.Session()
+cv_session.trust_env = False
+def cv_load_image(in_):
+    if in_[:4] == 'http':
+        img_nparr = np.fromstring(cv_session.get(in_).content, np.uint8)
+        img = cv2.imdecode(img_nparr, cv2.IMREAD_COLOR)
+    else:
+        img = cv2.imread(in_)
+    return img    
+
 def test_net(net, imdb, max_per_image=100, thresh=0.05, vis=False):
     """Test a Fast R-CNN network on an image database."""
     num_images = len(imdb.image_index)
@@ -277,7 +288,8 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, vis=False):
             box_proposals = roidb[i]['boxes'][roidb[i]['gt_classes'] == 0]
 
         ## read image from the absolute path    
-        im = cv2.imread(imdb.image_path_at(i))
+        im = cv_load_image(imdb.image_path_at(i))
+
         _t['im_detect'].tic()
         ### here, fowrawd has finished, we can get the results now.
         #   boxes: (300*84)shifted box and is the final bounding box, for test, we
